@@ -93,7 +93,7 @@ if __name__ == "__main__":
     else:
         password = getpass.getpass('Amex password for {0}: '.format(args.username))
     if not password:
-        print("No password given.", file=sys.stderr)
+        status("No password given.")
         sys.exit(1)
 
     sess = requests.session()
