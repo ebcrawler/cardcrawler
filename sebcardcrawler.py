@@ -89,6 +89,7 @@ if __name__ == "__main__":
         driver.find_element_by_id("eidbtn1").click()
 
         # Fill out personnr
+        WebDriverWait(driver, 5).until(cond.visibility_of_element_located((By.CSS_SELECTOR, 'input.id-number-input')))
         driver.find_element_by_css_selector("input.id-number-input").send_keys(args.personnr)
 
         # Wait for it to realize we've done so
