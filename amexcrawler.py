@@ -8,7 +8,10 @@ import json
 import csv
 import functools
 import re
-from datetime import date
+import time
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 csvcolumns = [
     'charge_date',
@@ -76,6 +79,10 @@ if __name__ == "__main__":
     parser.add_argument('--format', choices=('csv', 'json'), default='csv', help='Output format')
     parser.add_argument('--jsonpretty', action='store_true', help='Pretty-print json output')
     parser.add_argument('--output', type=argparse.FileType('w', encoding='UTF-8'), default='-', help='Write output to file (- for stdout)')
+    parser.add_argument('--debug', action='store_true', help='Enable debug = view the chrome window')
+    parser.add_argument('--chrome', type=str, default='chrome', help='Path to chrome browser to use')
+    parser.add_argument('--chromedriver', type=str, default='chromedriver', help='Path to chromedriver binary to use')
+    parser.add_argument('--nosandbox', action='store_true', help='Disable chrome sandbox (used in docker)')
 
     parser.add_argument('--listtokens', action='store_true', help='List available accounts/tokens')
 
@@ -96,19 +103,41 @@ if __name__ == "__main__":
         status("No password given.")
         sys.exit(1)
 
+    chrome_options = Options()
+    chrome_options.binary_location = args.chrome
+    if not args.debug:
+        chrome_options.add_argument('--headless')
+    if args.nosandbox:
+        chrome_options.add_argument('--no-sandbox')
+    driver = webdriver.Chrome(executable_path=args.chromedriver, options=chrome_options)
+
     sess = requests.session()
-    status("Logging in...")
-    r = sess.post('https://global.americanexpress.com/myca/logon/emea/action/login', {
-        'request_type': 'login',
-        'Face': 'sv_SE',
-        'UserID': args.username,
-        'Password': password,
-        'Logon': 'logon',
-        'version': 4,
-        'DestsPage': 'https://global.americanexpress.com/dashboard',
-        'REMEMBERME': 'off',
-    })
-    r.raise_for_status()
+
+    try:
+        driver.implicitly_wait(3)
+
+        status("Getting login form...")
+        driver.get('https://www.americanexpress.com/sv-se/account/login?inav=iNavLnkLog')
+        # Click on the cookie button
+        driver.find_element_by_id('sprite-AcceptButton_SE').click()
+        status("Logging in...")
+        # Log in
+        driver.find_element_by_id('eliloUserID').clear()
+        driver.find_element_by_id('eliloUserID').send_keys(args.username)
+        driver.find_element_by_id('eliloPassword').clear()
+        driver.find_element_by_id('eliloPassword').send_keys(password)
+        driver.find_element_by_id('loginSubmit').click()
+
+        # Wait for some random background javascript
+        status("Waiting for cookies...")
+        time.sleep(5)
+
+        status("Copying {} cookies".format(len(driver.get_cookies())))
+        for c in driver.get_cookies():
+            sess.cookies.set_cookie(requests.cookies.create_cookie(c['name'], c['value']))
+    finally:
+        # Make sure we always shut down the chrome
+        driver.quit()
 
     if args.listtokens:
         status("Fetching dashboard...")
