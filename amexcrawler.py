@@ -114,12 +114,18 @@ if __name__ == "__main__":
     sess = requests.session()
 
     try:
-        driver.implicitly_wait(3)
+        driver.implicitly_wait(5)
 
         status("Getting login form...")
         driver.get('https://www.americanexpress.com/sv-se/account/login?inav=iNavLnkLog')
         # Click on the cookie button
-        driver.find_element_by_id('sprite-AcceptButton_SE').click()
+        status("Accepting cookies...")
+        try:
+            driver.find_element_by_id('sprite-AcceptButton_SE').click()
+        except Exception:
+            # But don't care if it fails
+            pass
+
         status("Logging in...")
         # Log in
         driver.find_element_by_id('eliloUserID').clear()
