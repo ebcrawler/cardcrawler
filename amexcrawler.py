@@ -135,8 +135,36 @@ if __name__ == "__main__":
         driver.find_element_by_id('loginSubmit').click()
 
         # Wait for some random background javascript
-        status("Waiting for cookies...")
+        status("Waiting for cookies or 2FA...")
         time.sleep(5)
+
+        # Is 2FA here?
+        try:
+            # Select the first available 2fa if we have one
+            driver.find_element_by_css_selector('div[data-module-name="identity-components-otp"] input[type=radio]').click()
+            # Then find and click the button
+            buttons = driver.find_element_by_css_selector('div[data-module-name="identity-components-otp"]').find_elements_by_css_selector('button')
+            b1 = next(b for b in buttons if 'btnPrimary' in b.get_attribute('class'))
+            b1.click()
+            codefield = driver.find_element_by_id('question-input')
+            code = getpass.getpass('One time password: ')
+            codefield.send_keys(code)
+
+            buttons2 = driver.find_element_by_css_selector('div[data-module-name="identity-components-question"]').find_elements_by_css_selector('button')
+            b2 = next(b for b in buttons2 if 'btnPrimary' in b.get_attribute('class'))
+            b2.click()
+            time.sleep(2)
+
+            buttons3 = driver.find_element_by_css_selector('div[data-module-name="identity-two-step-verification"]').find_elements_by_css_selector('button')
+            b3 = next(b for b in buttons3 if 'btnPrimary' in b.get_attribute('class'))
+            b3.click()
+            status("2FA completed")
+        except AttributeError:
+            status("No 2FA or 2FA aborted. Trying to continue.")
+        except Exception as e:
+            status(e)
+
+        time.sleep(2)
 
         status("Copying {} cookies".format(len(driver.get_cookies())))
         for c in driver.get_cookies():
