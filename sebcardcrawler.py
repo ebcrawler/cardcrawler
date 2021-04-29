@@ -122,7 +122,7 @@ if __name__ == "__main__":
             driver.find_elements_by_css_selector('ul.listing li a')[n].click()
 
             # Wait for the new page to appear
-            WebDriverWait(driver, 30).until(cond.visibility_of_element_located((By.CSS_SELECTOR, 'section#transactionTableContent ul.table li')))
+            WebDriverWait(driver, 30).until(cond.visibility_of_element_located((By.CSS_SELECTOR, 'section#transactionTableContent')))
 
             # Fetch the year from the header, so we can store it correctly
             txtinfo = driver.find_element_by_css_selector('table.invoice-details tbody tr:nth-child(3) td:nth-child(2)').text
