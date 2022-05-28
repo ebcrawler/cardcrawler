@@ -27,7 +27,7 @@ def get_transaction_id(t):
 
 
 def get_transaction_row(t, year):
-    r = [get_transaction_id(t), ] + [c.text for c in t.find_elements_by_css_selector('ul.container li')]
+    r = [get_transaction_id(t), ] + [c.text.replace('−', '-') for c in t.find_elements_by_css_selector('ul.container li')]
 
     # Inject the year into the dates. For uninvoiced we use the current year.
     chargedate = date(int(year), *[int(x) for x in r[1].split('-')])
