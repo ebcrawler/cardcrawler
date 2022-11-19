@@ -121,8 +121,9 @@ if __name__ == "__main__":
         # Click on the cookie button
         status("Accepting cookies...")
         try:
-            driver.find_element_by_id('sprite-AcceptButton_SE').click()
+            driver.find_element_by_css_selector('button[data-testid="granular-banner-button-accept-all"]').click()
         except Exception:
+            print("Clicking cookie accept failed")
             # But don't care if it fails
             pass
 
