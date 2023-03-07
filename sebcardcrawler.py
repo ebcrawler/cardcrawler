@@ -69,8 +69,8 @@ if __name__ == "__main__":
 
     chrome_options = Options()
     chrome_options.binary_location = args.chrome
-    if not args.debug:
-        chrome_options.add_argument('--headless')
+#    if not args.debug:
+#        chrome_options.add_argument('--headless')
     if args.nosandbox:
         chrome_options.add_argument('--no-sandbox')
     driver = webdriver.Chrome(executable_path=args.chromedriver, options=chrome_options)
@@ -88,15 +88,6 @@ if __name__ == "__main__":
         # Click log in with bank-id on other device
         driver.find_element_by_id("eidbtn1").click()
 
-        # Fill out personnr
-        WebDriverWait(driver, 5).until(cond.visibility_of_element_located((By.CSS_SELECTOR, 'input.id-number-input')))
-        driver.find_element_by_css_selector("input.id-number-input").send_keys(args.personnr)
-
-        # Wait for it to realize we've done so
-        WebDriverWait(driver, 5).until(cond.element_to_be_clickable((By.CSS_SELECTOR, 'a.ok')))
-
-        # Click through to the BankId wait page
-        driver.find_element_by_css_selector("a.ok").click()
         status("Confirm login in with bank-id")
 
         WebDriverWait(driver, 30).until(cond.title_contains('Mitt'))
