@@ -4,6 +4,7 @@ import argparse
 import csv
 import sys
 import datetime
+import re
 import time
 from decimal import Decimal
 import getpass
@@ -74,12 +75,18 @@ if __name__ == "__main__":
         WebDriverWait(driver, 5).until(cond.visibility_of_element_located((By.XPATH, "//span[contains(text(),'Enter passcode')]")))
         send_slow_string(driver, password)
 
-        WebDriverWait(driver, 5).until(cond.visibility_of_element_located((By.XPATH, "//span[contains(text(),'6-digit code')]")))
-        code = getpass.getpass('One time password (from SMS): ')
-        send_slow_string(driver, code)
+        # SMS code flow, do we need both?
+#        WebDriverWait(driver, 5).until(cond.visibility_of_element_located((By.XPATH, "//span[contains(text(),'6-digit code')]")))
+#        code = getpass.getpass('One time password (from SMS): ')
+#        send_slow_string(driver, code)
+
+        # New flow using app
+        WebDriverWait(driver, 5).until(cond.visibility_of_element_located((By.XPATH, "//span[contains(text(),'Revolut app')]")))
+        status("Approve the sign-in request in the revolut app, please")
 
         # Wait for and get rid of cookie popup
-        WebDriverWait(driver, 10).until(cond.visibility_of_element_located((By.XPATH, "//button//span[contains(.,'Allow all cookies')]/..")))
+        WebDriverWait(driver, 20).until(cond.visibility_of_element_located((By.XPATH, "//button//span[contains(.,'Allow all cookies')]/..")))
+        status("Thank you, login completed.")
         driver.find_element_by_xpath("//button//span[contains(.,'Allow all cookies')]/..").click()
 
         # Wait for really stupid  "click here for an into" popup
@@ -104,6 +111,8 @@ if __name__ == "__main__":
                 previous_top = pagetop
             for g in driver.find_elements_by_css_selector('div[role="transactions-group"]'):
                 date = datetime.date.fromtimestamp(int(g.get_attribute("data-group"))/1000)
+                if date < datetime.date.today() - datetime.timedelta(days=60):
+                    break
                 for t in g.find_elements_by_css_selector('button[data-transactionid]'):
                     transid = t.get_attribute("data-transactionid")
                     # Get the two spans using xpath since it otherwise traverses
@@ -114,15 +123,16 @@ if __name__ == "__main__":
                         fulltime = datetime.datetime.combine(date, datetime.datetime.strptime(timeval, "%H:%M %p").time())
                     except:
                         fulltime = datetime.datetime.combine(date, datetime.time(0, 0, 0))
-                    (what, currency, amount) = amountspan.text.split()
-                    if timeval.startswith('Pending') or timeval.startswith('Failed'):
+                    if timeval.startswith('Pending') or timeval.startswith('Failed') or timeval.startswith('Insufficient balance'):
                         continue
-
+                    if re.match(r'(Sold|Bought) \w+ (to|with) \w+', title):
+                        continue
+                    (what, currency, amount) = amountspan.text.split()
                     if currency != 'SEK':
                         raise Exception("Somehow found currency {}".format(currency))
                     # Turn amount into a decimal *and* turn it negative (to match the kind of
                     # input we have from the other crawlers)
-                    amount = -Decimal(amount)
+                    amount = -Decimal(amount.replace(',', ''))
                     if what.strip() == "-":
                         amount = -amount
                     transactions.append((transid, fulltime, title, amount))
