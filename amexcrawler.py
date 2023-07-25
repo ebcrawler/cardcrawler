@@ -142,28 +142,36 @@ if __name__ == "__main__":
         # Is 2FA here?
         try:
             # Select the first available 2fa if we have one
-            driver.find_element_by_css_selector('div[data-module-name="identity-components-otp"] input[type=radio]').click()
+            clicked = False
+            try:
+                driver.find_element_by_css_selector('div[data-module-name="identity-components-otp"] input[type=radio]').click()
+                clicked = True
+            except:
+                status("Exception trying to click radio button, trying the label instead")
+
+            if not clicked:
+                time.sleep(1)
+                driver.find_element_by_css_selector('div[data-module-name="identity-components-otp"] label').click()
+
             # Then find and click the button
-            buttons = driver.find_element_by_css_selector('div[data-module-name="identity-components-otp"]').find_elements_by_css_selector('button')
-            b1 = next(b for b in buttons if 'btnPrimary' in b.get_attribute('class'))
+            b1 = driver.find_element_by_css_selector('div[data-module-name="identity-components-otp"] button[type="submit"]')
             b1.click()
+
             codefield = driver.find_element_by_id('question-input')
             code = getpass.getpass('One time password: ')
             codefield.send_keys(code)
 
-            buttons2 = driver.find_element_by_css_selector('div[data-module-name="identity-components-question"]').find_elements_by_css_selector('button')
-            b2 = next(b for b in buttons2 if 'btnPrimary' in b.get_attribute('class'))
-            b2.click()
+            driver.find_element_by_css_selector('div[data-module-name="identity-components-question"] button[type="submit"]').click()
             time.sleep(2)
 
-            buttons3 = driver.find_element_by_css_selector('div[data-module-name="identity-two-step-verification"]').find_elements_by_css_selector('button')
-            b3 = next(b for b in buttons3 if 'btnPrimary' in b.get_attribute('class'))
-            b3.click()
+            driver.find_element_by_css_selector('div[data-module-name="identity-two-step-verification"] button[type="submit"]').click()
             status("2FA completed")
         except AttributeError:
             status("No 2FA or 2FA aborted. Trying to continue.")
         except Exception as e:
+            status("Exception: {}".format(type(e)))
             status(e)
+            sys.exit(1)
 
         time.sleep(2)
 
